@@ -12,7 +12,7 @@ RUN go get -u -v github.com/tpng/gopkgs
 RUN go get -u -v github.com/newhook/go-symbols
 RUN go get -u -v golang.org/x/tools/cmd/guru
 
-# Delve
+# Delve install
 RUN go get github.com/derekparker/delve/cmd/dlv
 
 RUN mkdir /var/workspace
