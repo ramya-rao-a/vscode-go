@@ -1,0 +1,14 @@
+FROM golang:1.6-alpine
+MAINTAINER João Moreno
+
+RUN go get -u -v github.com/nsf/gocode
+RUN go get -u -v github.com/rogpeppe/godef
+RUN go get -u -v github.com/golang/lint/golint
+RUN go get -u -v github.com/lukehoban/go-outline
+RUN go get -u -v sourcegraph.com/sqs/goreturns
+RUN go get -u -v golang.org/x/tools/cmd/gorename
+RUN go get -u -v github.com/tpng/gopkgs
+RUN go get -u -v github.com/newhook/go-symbols
+RUN go get -u -v golang.org/x/tools/cmd/guru
+
+RUN mkdir /var/workspace
