@@ -17,4 +17,4 @@ RUN go get github.com/derekparker/delve/cmd/dlv
 
 RUN mkdir /var/workspace
 
-RUN tail -f /dev/null
+ENTRYPOINT tail -f /dev/null
