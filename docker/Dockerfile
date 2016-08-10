@@ -16,3 +16,5 @@ RUN go get -u -v golang.org/x/tools/cmd/guru
 RUN go get github.com/derekparker/delve/cmd/dlv
 
 RUN mkdir /var/workspace
+
+RUN tail -f /dev/null
