@@ -11,6 +11,8 @@ import path = require('path');
 import dmp = require('diff-match-patch');
 import { getBinPath } from './goPath';
 import { promptForMissingTool } from './goInstallTools';
+import { execContainer } from './goDocker';
+
 
 let EDIT_DELETE = 0;
 let EDIT_INSERT = 1;
@@ -54,6 +56,10 @@ export class Formatter {
 			let filename = document.fileName;
 
 			let formatCommandBinPath = getBinPath(this.formatCommand);
+
+			execContainer('gofmt', [filename], {}, (err, stdout, stderr) => {
+				console.log(err, stdout, stderr);
+			});
 
 			cp.execFile(formatCommandBinPath, [filename], {}, (err, stdout, stderr) => {
 				try {

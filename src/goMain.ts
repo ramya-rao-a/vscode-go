@@ -25,11 +25,19 @@ import { GO_MODE } from './goMode';
 import { showHideStatus } from './goStatus';
 import { coverageCurrentPackage, getCodeCoverage, removeCodeCoverage } from './goCover';
 import { testAtCursor, testCurrentPackage, testCurrentFile } from './goTest';
+import { getContainer } from './goDocker';
 import { addImport } from './goImport';
 
 let diagnosticCollection: vscode.DiagnosticCollection;
 
+
 export function activate(ctx: vscode.ExtensionContext): void {
+
+	ctx.subscriptions.push({
+		dispose() {
+			getContainer().then(value => value.stop());
+		}
+	})
 
 	ctx.subscriptions.push(vscode.languages.registerHoverProvider(GO_MODE, new GoHoverProvider()));
 	ctx.subscriptions.push(vscode.languages.registerCompletionItemProvider(GO_MODE, new GoCompletionItemProvider(), '.', '\"'));
