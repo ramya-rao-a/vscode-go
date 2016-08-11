@@ -14,6 +14,7 @@ import { getBinPath, getGoRuntimePath } from './goPath';
 import { getCoverage } from './goCover';
 import { outputChannel } from './goStatus';
 import { promptForMissingTool } from './goInstallTools';
+import { execContainer } from './goDocker';
 
 export interface ICheckResult {
 	file: string;
@@ -24,7 +25,10 @@ export interface ICheckResult {
 
 function runTool(cmd: string, args: string[], cwd: string, severity: string, useStdErr: boolean, toolName: string, notFoundError?: string) {
 	return new Promise((resolve, reject) => {
-		cp.execFile(cmd, args, { cwd: cwd }, (err, stdout, stderr) => {
+
+		execContainer(cmd, args, { cwd: cwd}, (err, stdout, stderr) => {
+		// cp.execFile(cmd, args, { cwd: cwd }, (err, stdout, stderr) => {
+			console.log(err, stdout, stderr);
 			try {
 				if (err && (<any>err).code === 'ENOENT') {
 					if (toolName) {
@@ -69,12 +73,13 @@ export function check(filename: string, goConfig: vscode.WorkspaceConfiguration)
 		let buildFlags = goConfig['buildFlags'] || [];
 		let buildTags = '"' + goConfig['buildTags'] + '"';
 		let tmppath = path.normalize(path.join(os.tmpdir(), 'go-code-check'));
-		let args = ['build', '-o', tmppath, '-tags', buildTags, ...buildFlags, '.'];
+		// adding the actual cwd (relative to /go) to the actual build arguments
+		let args = ['build', '-o', tmppath, '-tags', buildTags, ...buildFlags, '../' + cwd];
 		if (filename.match(/_test.go$/i)) {
-			args = ['test', '-copybinary', '-o', tmppath, '-c', '-tags', buildTags, ...buildFlags, '.'];
+			args = ['test', '-copybinary', '-o', tmppath, '-c', '-tags', buildTags, ...buildFlags, '../' + cwd];
 		}
 		runningToolsPromises.push(runTool(
-			getGoRuntimePath(),
+			'go', // use 'go' command directly rather than the gopath as the go path is defined in the container and not locally
 			args,
 			cwd,
 			'error',
@@ -106,7 +111,7 @@ export function check(filename: string, goConfig: vscode.WorkspaceConfiguration)
 	if (!!goConfig['vetOnSave']) {
 		let vetFlags = goConfig['vetFlags'] || [];
 		runningToolsPromises.push(runTool(
-			getGoRuntimePath(),
+			'go', // use 'go' command directly rather than the gopath as the go path is defined in the container and not locally
 			['tool', 'vet', ...vetFlags, filename],
 			cwd,
 			'warning',
