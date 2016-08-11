@@ -10,48 +10,70 @@ var Docker = require('dockerode');
 var docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 
-export function execContainer(cmd: string, args: string[], options: any, callback: (err: any, stdout: string, stderr: string) => void) {
-	
-	getContainer().then(container => {
-		
-		const options = {
-			AttachStdout: true,
-			AttachStderr: true,
-			Tty: false,
-			Cmd: [cmd].concat(args)
-		};
+export function exec(container: any, cmd: string, args: string[]): Thenable<{ stdout: string; stderr: string; err: number; data: any;}> {
+
+	const options = {
+		AttachStdout: true,
+		AttachStderr: true,
+		Tty: false,
+		Cmd: [cmd].concat(args)
+	};
+
+	return new Promise((resolve, reject) => {
 
 		container.exec(options, function (err, exec) {
 			if (err) {
-				callback(err, undefined, undefined);
+				reject(err);
 				return;
 			};
 
-			exec.start(function (err, stream) {
+			exec.start({
+				hijack: true
+			}, function (err, stream) {
 
 				if (err) {
-					callback(err, undefined, undefined);
+					reject(err);
 					return;
 				};
 
-				let data = '';
+				const stdout: Buffer[] = [];
+				const stderr: Buffer[] = [];
 
-				stream.setEncoding('utf8');
+				// de-multiplex into 'streams'
+				docker.modem.demuxStream(stream, { write: stdout.push.bind(stdout) }, { write: stderr.push.bind(stderr) });
+
+				// stream.setEncoding('utf8');
 				stream.on('error', err => {
-					callback(err, undefined, undefined);
+					reject(err);
 				});
-				stream.on('data', part => {
-					data += part;
-				});
+				
 				stream.on('end', () => {
-					callback(undefined, data, undefined);
+
+					exec.inspect(function (err, data) {
+
+						if (err) {
+							reject(err);
+							return;
+						}
+
+						resolve({
+							data,
+							err: data.ExitCode !== 0 ? data.ExitCode : undefined,
+							stdout: Buffer.concat(stdout).toString(),
+							stderr: Buffer.concat(stderr).toString()
+						});
+					});
 				});
 			});
 		});
 
-	}, err => {
-		callback(err, undefined, undefined);
 	});
+}
+
+export function execContainer(cmd: string, args: string[], options: any, callback: (err: any, stdout: string, stderr: string) => void) {
+
+	getContainer().then(container => exec(container, cmd, args))
+		.then(value => callback(value.err, value.stdout, value.stderr), err => callback(err, undefined, undefined));
 }
 
 
