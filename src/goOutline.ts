@@ -10,6 +10,7 @@ import cp = require('child_process');
 import path = require('path');
 import { getBinPath } from './goPath';
 import { promptForMissingTool } from './goInstallTools';
+import { execContainer } from './goDocker';
 
 // Keep in sync with https://github.com/lukehoban/go-outline
 interface GoOutlineRange {
@@ -31,9 +32,14 @@ interface GoOutlineDeclaration {
 
 export function documentSymbols(filename: string): Promise<GoOutlineDeclaration[]> {
 	return new Promise<GoOutlineDeclaration[]>((resolve, reject) => {
-		let gooutline = getBinPath('go-outline');
-		// Spawn `go-outline` process
-		let p = cp.execFile(gooutline, ['-f', filename], {}, (err, stdout, stderr) => {
+
+		execContainer('go-outline', ['-f', filename], {}, (err, stdout, stderr) => {
+		// 	console.log(err, stdout, stderr);
+		// });
+
+		// let gooutline = getBinPath('go-outline');
+		// // Spawn `go-outline` process
+		// let p = cp.execFile(gooutline, ['-f', filename], {}, (err, stdout, stderr) => {
 			try {
 				if (err && (<any>err).code === 'ENOENT') {
 					promptForMissingTool('go-outline');
