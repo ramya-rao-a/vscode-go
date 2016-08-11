@@ -6,11 +6,11 @@
 'use strict';
 import {Stream, Duplex} from 'stream';
 import vscode = require('vscode');
-var Docker = require('dockerode');
-var docker = new Docker({ socketPath: '/var/run/docker.sock' });
+import * as Docker from 'dockerode';
 
+const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
-function exec(container: any, cmd: string, args: string[], stdin?: Stream): Thenable<{ stdout: string; stderr: string; err: number; data: any;}> {
+function exec(container: Docker.Container, cmd: string, args: string[], stdin?: Stream): Thenable<{ stdout: string; stderr: string; err: number; data: Docker.ExecInspectData;}> {
 
 	const options = {
 		AttachStdin: true,
@@ -46,13 +46,16 @@ function exec(container: any, cmd: string, args: string[], stdin?: Stream): Then
 				const stderr: Buffer[] = [];
 
 				// de-multiplex into 'streams'
-				docker.modem.demuxStream(stream, { write: stdout.push.bind(stdout) }, { write: stderr.push.bind(stderr) });
+				const _stdout = { write: stdout.push.bind(stdout) } as any;
+				const _stderr = { write: stderr.push.bind(stderr) } as any;
+
+				docker.modem.demuxStream(stream, _stdout, _stderr);
 
 				// stream.setEncoding('utf8');
 				stream.on('error', err => {
 					reject(err);
 				});
-				
+
 				stream.on('end', () => {
 
 					exec.inspect(function (err, data) {
@@ -105,7 +108,7 @@ export function execContainer(cmd: string, args: string[], options: any, callbac
 
 let _containerPromise: Thenable<any>;
 
-export function getContainer(image: string = 'joh-go'): Thenable<any> {
+export function getContainer(image: string = 'joaomoreno/vscode-go'): Thenable<any> {
 
 	if (!_containerPromise) {
 		_containerPromise = new Promise((resolve, reject) => {
