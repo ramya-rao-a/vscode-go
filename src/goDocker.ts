@@ -79,7 +79,19 @@ function exec(container: Docker.Container, cmd: string, args: string[], stdin?: 
 	});
 }
 
+function once<T extends Function>(fn: T): T {
+	let called = false;
+	return <any> function () {
+		if (!called) {
+			called = true;
+			return fn.apply(this, arguments);
+		}
+	};
+}
+
 export function execContainer(cmd: string, args: string[], options: any, callback: (err: any, stdout: string, stderr: string) => void) {
+
+	callback = once(callback);
 
 	const stdin = new class extends Duplex {
 
@@ -95,13 +107,18 @@ export function execContainer(cmd: string, args: string[], options: any, callbac
 		}
 	}
 
+	function kill() {
+		callback(-1, '', '');
+	}
+
 	getContainer().then(container => exec(container, cmd, args, stdin))
 		.then(value => callback(value.err, value.stdout, value.stderr), err => callback(err, undefined, undefined));
 
 
 	// looks like a child process...
 	return {
-		stdin
+		stdin,
+		kill
 	};
 }
 
@@ -114,10 +131,8 @@ export function getContainer(image: string = 'joaomoreno/vscode-go'): Thenable<a
 		_containerPromise = new Promise((resolve, reject) => {
 			docker.createContainer({
 				Image: image,
-				'Volumes': { [`${vscode.workspace.rootPath}`]: {} },
-				"HostConfig": {
-					"Binds": [`${vscode.workspace.rootPath}:${vscode.workspace.rootPath}`]
-				}
+				Volumes: { [`${vscode.workspace.rootPath}`]: {} },
+				HostConfig: { 'Binds': [`${vscode.workspace.rootPath}:${vscode.workspace.rootPath}`] }
 			}, function (err, container) {
 
 				if (err) {
@@ -125,7 +140,9 @@ export function getContainer(image: string = 'joaomoreno/vscode-go'): Thenable<a
 					return;
 				}
 
-				container.start(function (err, data) {
+				container.start({
+					Env: [`GOPATH=${vscode.workspace.rootPath}`, "FOO=bar"]
+				}, function (err, data) {
 					if (err) {
 						reject(err);
 						return;
