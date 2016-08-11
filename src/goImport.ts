@@ -9,13 +9,15 @@ import vscode = require('vscode');
 import cp = require('child_process');
 import { getBinPath } from './goPath';
 import { parseFilePrelude } from './util';
-import { promptForMissingTool } from './goInstallTools';
+import { missingToolinDocker } from './goInstallTools';
+import { execContainer } from './goDocker';
 
 export function listPackages(): Thenable<string[]> {
 	return new Promise<string[]>((resolve, reject) => {
-		cp.execFile(getBinPath('gopkgs'), [], (err, stdout, stderr) => {
+
+		execContainer('gopkgs', [], {}, (err, stdout, stderr) => {
 			if (err && (<any>err).code === 'ENOENT') {
-				promptForMissingTool('gopkgs');
+				missingToolinDocker('gopkgs');
 				return reject();
 			}
 			let lines = stdout.toString().split('\n');

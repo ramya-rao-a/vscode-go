@@ -37,6 +37,10 @@ export function promptForMissingTool(tool: string) {
 	});
 }
 
+export function missingToolinDocker(tool: string) {
+	vscode.window.showErrorMessage(`Failed to install the tool "${tool}" in docker`)
+}
+
 export function installTools(missing: string[]) {
 	outputChannel.show();
 	outputChannel.clear();
