@@ -58,10 +58,10 @@ export class Formatter {
 			let formatCommandBinPath = getBinPath(this.formatCommand);
 
 			execContainer('gofmt', [filename], {}, (err, stdout, stderr) => {
-				console.log(err, stdout, stderr);
-			});
+			// 	console.log(err, stdout, stderr);
+			// });
 
-			cp.execFile(formatCommandBinPath, [filename], {}, (err, stdout, stderr) => {
+			// cp.execFile(formatCommandBinPath, [filename], {}, (err, stdout, stderr) => {
 				try {
 					if (err && (<any>err).code === 'ENOENT') {
 						promptForMissingTool(formatCommandBinPath);
