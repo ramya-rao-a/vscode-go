@@ -40,6 +40,7 @@ declare module Docker {
 	}
 
 	class Container {
+		start(options: any, cb: (err: Error, data: any)=>void): void;
 		start(cb: (err: Error, data: any)=>void): void;
 		exec(options: ExecOptions, cb: (err: Error, exec: Exec)=>void): void;
 	}
