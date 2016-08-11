@@ -11,6 +11,7 @@ import { dirname, basename } from 'path';
 import { getBinPath } from './goPath';
 import { parameters } from './util';
 import { promptForMissingTool } from './goInstallTools';
+import { execContainer } from './goDocker';
 
 function vscodeKindFromGoCodeClass(kind: string): vscode.CompletionItemKind {
 	switch (kind) {
@@ -74,7 +75,8 @@ export class GoCompletionItemProvider implements vscode.CompletionItemProvider {
 				let env = Object.assign({}, process.env, { GOOS: '', GOARCH: '' });
 
 				// Spawn `gocode` process
-				let p = cp.execFile(gocode, ['-f=json', 'autocomplete', filename, 'c' + offset], { env }, (err, stdout, stderr) => {
+				let p  = execContainer('gocode', ['-f=json', 'autocomplete', filename, 'c' + offset], { env }, (err, stdout, stderr) => {
+				// let p = cp.execFile(gocode, ['-f=json', 'autocomplete', filename, 'c' + offset], { env }, (err, stdout, stderr) => {
 					try {
 						if (err && (<any>err).code === 'ENOENT') {
 							promptForMissingTool('gocode');
@@ -147,8 +149,12 @@ export class GoCompletionItemProvider implements vscode.CompletionItemProvider {
 			}
 			let gocode = getBinPath('gocode');
 			let autobuild = vscode.workspace.getConfiguration('go')['gocodeAutoBuild'];
-			cp.execFile(gocode, ['set', 'propose-builtins', 'true'], {}, (err, stdout, stderr) => {
-				cp.execFile(gocode, ['set', 'autobuild', autobuild], {}, (err, stdout, stderr) => {
+			
+			execContainer('gocode', ['set', 'propose-builtins', 'true'], {}, (err, stdout, stderr) => {
+			// cp.execFile(gocode, ['set', 'propose-builtins', 'true'], {}, (err, stdout, stderr) => {
+
+				execContainer('gocode', ['set', 'autobuild', autobuild], {}, (err, stdout, stderr) => {
+				// cp.execFile(gocode, ['set', 'autobuild', autobuild], {}, (err, stdout, stderr) => {
 					resolve();
 				});
 			});
