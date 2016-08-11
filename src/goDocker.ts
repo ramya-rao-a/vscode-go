@@ -4,15 +4,16 @@
  *--------------------------------------------------------*/
 
 'use strict';
-
+import {Stream, Duplex} from 'stream';
 import vscode = require('vscode');
 var Docker = require('dockerode');
 var docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 
-export function exec(container: any, cmd: string, args: string[]): Thenable<{ stdout: string; stderr: string; err: number; data: any;}> {
+function exec(container: any, cmd: string, args: string[], stdin?: Stream): Thenable<{ stdout: string; stderr: string; err: number; data: any;}> {
 
 	const options = {
+		AttachStdin: true,
 		AttachStdout: true,
 		AttachStderr: true,
 		Tty: false,
@@ -28,13 +29,18 @@ export function exec(container: any, cmd: string, args: string[]): Thenable<{ st
 			};
 
 			exec.start({
-				hijack: true
+				hijack: true,
+				stdin: true
 			}, function (err, stream) {
 
 				if (err) {
 					reject(err);
 					return;
 				};
+
+				if (stdin) {
+					stdin.pipe(stream);
+				}
 
 				const stdout: Buffer[] = [];
 				const stderr: Buffer[] = [];
@@ -72,8 +78,28 @@ export function exec(container: any, cmd: string, args: string[]): Thenable<{ st
 
 export function execContainer(cmd: string, args: string[], options: any, callback: (err: any, stdout: string, stderr: string) => void) {
 
-	getContainer().then(container => exec(container, cmd, args))
+	const stdin = new class extends Duplex {
+
+		private _chunks: any[] = [];
+
+		_write(chunk, encoding, callback) {
+			this._chunks.push(chunk);
+			callback();
+		}
+
+		_read(size) {
+			this.push(this._chunks.length > 0 ? this._chunks.shift() : null);
+		}
+	}
+
+	getContainer().then(container => exec(container, cmd, args, stdin))
 		.then(value => callback(value.err, value.stdout, value.stderr), err => callback(err, undefined, undefined));
+
+
+	// looks like a child process...
+	return {
+		stdin
+	};
 }
 
 

@@ -11,6 +11,7 @@ import path = require('path');
 import { getBinPath } from './goPath';
 import { byteOffsetAt } from './util';
 import { promptForMissingTool } from './goInstallTools';
+import { execContainer } from './goDocker';
 
 export interface GoDefinitionInformtation {
 	file: string;
@@ -26,10 +27,15 @@ export function definitionLocation(document: vscode.TextDocument, position: vsco
 		let wordAtPosition = document.getWordRangeAtPosition(position);
 		let offset = byteOffsetAt(document, position);
 
-		let godef = getBinPath('godef');
 
-		// Spawn `godef` process
-		let p = cp.execFile(godef, ['-t', '-i', '-f', document.fileName, '-o', offset.toString()], {}, (err, stdout, stderr) => {
+		let p = execContainer('godef', ['-t', '-i', '-f', document.fileName, '-o', offset.toString()], {}, (err, stdout, stderr) => {
+		// 	console.log(err, stdout, stderr);
+		// });
+
+		// let godef = getBinPath('godef');
+
+		// // Spawn `godef` process
+		// let p = cp.execFile(godef, ['-t', '-i', '-f', document.fileName, '-o', offset.toString()], {}, (err, stdout, stderr) => {
 			try {
 				if (err && (<any>err).code === 'ENOENT') {
 					promptForMissingTool('godef');
@@ -57,7 +63,8 @@ export function definitionLocation(document: vscode.TextDocument, position: vsco
 				if (!includeDocs) {
 					return resolve(definitionInformation);
 				}
-				cp.execFile(godoc, [pkgPath], {}, (err, stdout, stderr) => {
+				execContainer('godoc', [pkgPath], {}, (err, stdout, stderr) => {
+				// cp.execFile(godoc, [pkgPath], {}, (err, stdout, stderr) => {
 					if (err && (<any>err).code === 'ENOENT') {
 						vscode.window.showInformationMessage('The "godoc" command is not available.');
 					}
