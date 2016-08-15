@@ -9,7 +9,7 @@ import vscode = require('vscode');
 import cp = require('child_process');
 import path = require('path');
 import dmp = require('diff-match-patch');
-import { getBinPath } from './goPath';
+import { getBinPath, convertToGoPathFromLocalPath } from './goPath';
 import { promptForMissingTool } from './goInstallTools';
 import { execContainer } from './goDocker';
 
@@ -53,7 +53,7 @@ export class Formatter {
 
 	public formatDocument(document: vscode.TextDocument): Thenable<vscode.TextEdit[]> {
 		return new Promise((resolve, reject) => {
-			let filename = document.fileName;
+			let filename = convertToGoPathFromLocalPath(document.fileName);
 
 			let formatCommandBinPath = getBinPath(this.formatCommand);
 

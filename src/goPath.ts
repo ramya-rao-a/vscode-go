@@ -8,6 +8,7 @@
 import fs = require('fs');
 import path = require('path');
 import os = require('os');
+import vscode = require('vscode');
 
 let binPathCache: { [bin: string]: string; } = {};
 let runtimePathCache: string = null;
@@ -75,4 +76,15 @@ export function getGoRuntimePath(): string {
 		runtimePathCache = pathparts.map(dir => path.join(dir, correctBinname('go'))).filter(candidate => fs.existsSync(candidate))[0];
 	}
 	return runtimePathCache;
+}
+
+
+export function convertToGoPathFromLocalPath(filename: string = null): string {
+	let relativePathFromRoot = filename ? filename.substr(vscode.workspace.rootPath.length) : '';
+	return `/go/src/${path.basename(vscode.workspace.rootPath)}${relativePathFromRoot}`;
+}
+
+export function convertToLocalPathFromGoPath(filename:string = null): string {
+	let goPathPrefix = `/go/src/${path.basename(vscode.workspace.rootPath)}`;
+	return vscode.workspace.rootPath + filename.substr(goPathPrefix.length);
 }

@@ -7,6 +7,8 @@
 import {Stream, Duplex} from 'stream';
 import vscode = require('vscode');
 import * as Docker from 'dockerode';
+import path = require('path');
+import { convertToGoPathFromLocalPath } from './goPath';
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
@@ -125,14 +127,15 @@ export function execContainer(cmd: string, args: string[], options: any, callbac
 
 let _containerPromise: Thenable<any>;
 
-export function getContainer(image: string = 'joaomoreno/vscode-go'): Thenable<any> {
+export function getContainer(image: string = 'ramyanexus/vscode-go'): Thenable<any> {
 
 	if (!_containerPromise) {
 		_containerPromise = new Promise((resolve, reject) => {
+			let folderInContainer = convertToGoPathFromLocalPath();
 			docker.createContainer({
 				Image: image,
-				Volumes: { [`${vscode.workspace.rootPath}`]: {} },
-				HostConfig: { 'Binds': [`${vscode.workspace.rootPath}:${vscode.workspace.rootPath}`] }
+				Volumes: { [folderInContainer]: {} },
+				HostConfig: { 'Binds': [`${vscode.workspace.rootPath}:${folderInContainer}`] }
 			}, function (err, container) {
 
 				if (err) {

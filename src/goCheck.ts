@@ -10,7 +10,7 @@ import cp = require('child_process');
 import path = require('path');
 import os = require('os');
 import fs = require('fs');
-import { getBinPath, getGoRuntimePath } from './goPath';
+import { getBinPath, getGoRuntimePath, convertToGoPathFromLocalPath , convertToLocalPathFromGoPath} from './goPath';
 import { getCoverage } from './goCover';
 import { outputChannel } from './goStatus';
 import { promptForMissingTool } from './goInstallTools';
@@ -51,7 +51,7 @@ function runTool(cmd: string, args: string[], cwd: string, severity: string, use
 					if (!match) continue;
 					let [_, __, file, ___, lineStr, ____, charStr, msg] = match;
 					let line = +lineStr;
-					file = path.resolve(cwd, file);
+					file = convertToLocalPathFromGoPath(path.resolve(cwd, file));
 					ret.push({ file, line, msg, severity });
 					outputChannel.appendLine(`${file}:${line}: ${msg}`);
 				}
@@ -67,6 +67,7 @@ function runTool(cmd: string, args: string[], cwd: string, severity: string, use
 export function check(filename: string, goConfig: vscode.WorkspaceConfiguration): Promise<ICheckResult[]> {
 	outputChannel.clear();
 	let runningToolsPromises = [];
+	filename = convertToGoPathFromLocalPath(filename);
 	let cwd = path.dirname(filename);
 
 	if (!!goConfig['buildOnSave']) {
@@ -79,9 +80,9 @@ export function check(filename: string, goConfig: vscode.WorkspaceConfiguration)
 			args = ['test', '-copybinary', '-o', tmppath, '-c', '-tags', buildTags, ...buildFlags, '../' + cwd];
 		}
 		runningToolsPromises.push(runTool(
-			'go', // use 'go' command directly rather than the gopath as the go path is defined in the container and not locally
+			'go', // use 'go' command directly. In the container, this $GOROOT/bin would be part of $PATH 
 			args,
-			cwd,
+			'/go', // in the container /go would be the cwd. TODO: set cwd in goDocker while starting the container and use the same here
 			'error',
 			true,
 			null,
@@ -100,7 +101,7 @@ export function check(filename: string, goConfig: vscode.WorkspaceConfiguration)
 		runningToolsPromises.push(runTool(
 			lintTool,
 			args,
-			cwd,
+			'/go', // in the container /go would be the cwd. TODO: set cwd in goDocker while starting the container and use the same here
 			'warning',
 			lintTool === 'golint',
 			lintTool === 'golint' ? 'golint' : null,
@@ -111,9 +112,9 @@ export function check(filename: string, goConfig: vscode.WorkspaceConfiguration)
 	if (!!goConfig['vetOnSave']) {
 		let vetFlags = goConfig['vetFlags'] || [];
 		runningToolsPromises.push(runTool(
-			'go', // use 'go' command directly rather than the gopath as the go path is defined in the container and not locally
+			'go', /// use 'go' command directly. In the container, this $GOROOT/bin would be part of $PATH
 			['tool', 'vet', ...vetFlags, filename],
-			cwd,
+			'/go', // in the container /go would be the cwd. TODO: set cwd in goDocker while starting the container and use the same here
 			'warning',
 			true,
 			null,

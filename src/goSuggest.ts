@@ -8,7 +8,7 @@
 import vscode = require('vscode');
 import cp = require('child_process');
 import { dirname, basename } from 'path';
-import { getBinPath } from './goPath';
+import { getBinPath, convertToGoPathFromLocalPath, convertToLocalPathFromGoPath } from './goPath';
 import { parameters } from './util';
 import { promptForMissingTool } from './goInstallTools';
 import { execContainer } from './goDocker';
@@ -42,7 +42,7 @@ export class GoCompletionItemProvider implements vscode.CompletionItemProvider {
 	public provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Thenable<vscode.CompletionItem[]> {
 		return this.ensureGoCodeConfigured().then(() => {
 			return new Promise<vscode.CompletionItem[]>((resolve, reject) => {
-				let filename = document.fileName;
+				let filename = convertToGoPathFromLocalPath(document.fileName);
 				let lineText = document.lineAt(position.line).text;
 
 				if (lineText.match(/^\s*\/\//)) {

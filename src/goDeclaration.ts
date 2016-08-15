@@ -8,7 +8,7 @@
 import vscode = require('vscode');
 import cp = require('child_process');
 import path = require('path');
-import { getBinPath } from './goPath';
+import { getBinPath, convertToGoPathFromLocalPath, convertToLocalPathFromGoPath } from './goPath';
 import { byteOffsetAt } from './util';
 import { promptForMissingTool } from './goInstallTools';
 import { execContainer } from './goDocker';
@@ -26,9 +26,9 @@ export function definitionLocation(document: vscode.TextDocument, position: vsco
 
 		let wordAtPosition = document.getWordRangeAtPosition(position);
 		let offset = byteOffsetAt(document, position);
+		let fileName = convertToGoPathFromLocalPath(document.fileName);
 
-
-		let p = execContainer('godef', ['-t', '-i', '-f', document.fileName, '-o', offset.toString()], {}, (err, stdout, stderr) => {
+		let p = execContainer('godef', ['-t', '-i', '-f', fileName, '-o', offset.toString()], {}, (err, stdout, stderr) => {
 		// 	console.log(err, stdout, stderr);
 		// });
 
@@ -53,8 +53,9 @@ export function definitionLocation(document: vscode.TextDocument, position: vsco
 				let signature = lines[1];
 				let godoc = getBinPath('godoc');
 				let pkgPath = path.dirname(file);
+				
 				let definitionInformation: GoDefinitionInformtation = {
-					file: file,
+					file: convertToLocalPathFromGoPath(file),
 					line: +line - 1,
 					col: + col - 1,
 					lines,

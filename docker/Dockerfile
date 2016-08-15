@@ -2,6 +2,11 @@ FROM golang:1.6-alpine
 MAINTAINER João Moreno
 
 RUN apk add --no-cache git
+
+# gcc and musl-dev are needed for gorename to work
+RUN apk add --no-cache gcc
+RUN apk add --no-cache musl-dev
+
 RUN go get -u -v github.com/nsf/gocode
 RUN go get -u -v github.com/rogpeppe/godef
 RUN go get -u -v github.com/golang/lint/golint

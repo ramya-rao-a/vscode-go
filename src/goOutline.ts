@@ -8,7 +8,7 @@
 import vscode = require('vscode');
 import cp = require('child_process');
 import path = require('path');
-import { getBinPath } from './goPath';
+import { getBinPath, convertToGoPathFromLocalPath } from './goPath';
 import { promptForMissingTool } from './goInstallTools';
 import { execContainer } from './goDocker';
 
@@ -86,7 +86,7 @@ export class GoDocumentSymbolProvider implements vscode.DocumentSymbolProvider {
 
 	public provideDocumentSymbols(document: vscode.TextDocument, token: vscode.CancellationToken): Thenable<vscode.SymbolInformation[]> {
 
-		return documentSymbols(document.fileName).then(decls => {
+		return documentSymbols(convertToGoPathFromLocalPath(document.fileName)).then(decls => {
 			let symbols: vscode.SymbolInformation[] = [];
 			this.convertToCodeSymbols(document, decls, symbols, '');
 			return symbols;

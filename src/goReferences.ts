@@ -8,7 +8,7 @@
 import vscode = require('vscode');
 import cp = require('child_process');
 import path = require('path');
-import { getBinPath } from './goPath';
+import { getBinPath, convertToGoPathFromLocalPath, convertToLocalPathFromGoPath } from './goPath';
 import { byteOffsetAt, canonicalizeGOPATHPrefix } from './util';
 import { promptForMissingTool } from './goInstallTools';
 import { execContainer } from './goDocker';
@@ -23,7 +23,7 @@ export class GoReferenceProvider implements vscode.ReferenceProvider {
 
 	private doFindReferences(document: vscode.TextDocument, position: vscode.Position, options: { includeDeclaration: boolean }, token: vscode.CancellationToken): Thenable<vscode.Location[]> {
 		return new Promise((resolve, reject) => {
-			let filename = canonicalizeGOPATHPrefix(document.fileName);
+			let filename = convertToGoPathFromLocalPath(document.fileName);
 			let cwd = path.dirname(filename);
 
 			// get current word
@@ -52,7 +52,7 @@ export class GoReferenceProvider implements vscode.ReferenceProvider {
 						let match = /^(.*):(\d+)\.(\d+)-(\d+)\.(\d+):/.exec(lines[i]);
 						if (!match) continue;
 						let [_, file, lineStartStr, colStartStr, lineEndStr, colEndStr] = match;
-						let referenceResource = vscode.Uri.file(path.resolve(cwd, file));
+						let referenceResource = vscode.Uri.file(path.resolve(cwd, convertToLocalPathFromGoPath(file)));
 						let range = new vscode.Range(
 							+lineStartStr - 1, +colStartStr - 1, +lineEndStr - 1, +colEndStr
 						);
