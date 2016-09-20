@@ -11,6 +11,9 @@ import { GoHoverProvider } from '../src/goExtraInfo';
 import { GoCompletionItemProvider } from '../src/goSuggest';
 import { GoSignatureHelpProvider } from '../src/goSignature';
 import { check } from '../src/goCheck';
+import { listPackages } from '../src/goImport';
+import cp = require('child_process');
+import { getBinPath } from '../src/goPath';
 
 suite('Go Extension Tests', () => {
 	let gopath = process.env['GOPATH'];
@@ -128,7 +131,7 @@ encountered.
 		}).then(() => done(), done);
 	});
 
-	test('Gometalinter error checking', (done) => {
+		test('Gometalinter error checking', (done) => {
 		let config = Object.create(vscode.workspace.getConfiguration('go'), {
 			'lintTool': { value: 'gometalinter' }
 		});
@@ -160,5 +163,48 @@ encountered.
 			}
 			assert.equal(sortedDiagnostics.length, expected.length, `too many errors ${JSON.stringify(sortedDiagnostics)}`);
 		}).then(() => done(), done);
+	});
+
+	test('Replace vendor packages with relative path', (done) => {
+		let filePath = path.join(process.env['GOPATH'], 'src', 'github.com', 'rogpeppe', 'godef', 'go', 'ast', 'ast.go');
+		let vendorPkgsFullPath = [
+			'github.com/rogpeppe/godef/vendor/9fans.net/go/acme',
+			'github.com/rogpeppe/godef/vendor/9fans.net/go/plan9',
+			'github.com/rogpeppe/godef/vendor/9fans.net/go/plan9/client'
+		];
+		let vendorPkgsRelativePath = [
+			'9fans.net/go/acme',
+			'9fans.net/go/plan9',
+			'9fans.net/go/plan9/client'
+		];
+
+		let gopkgsPromise = new Promise<void>((resolve, reject) => {
+			cp.execFile(getBinPath('gopkgs'), [], (err, stdout, stderr) => {
+				let pkgs = stdout.split('\n');
+				vendorPkgsFullPath.forEach(pkg => {
+					assert.equal(pkgs.indexOf(pkg) > -1, true);
+				});
+				vendorPkgsRelativePath.forEach(pkg => {
+					assert.equal(pkgs.indexOf(pkg), -1);
+				});
+				return resolve();
+			});
+		});
+
+		let listPkgPromise = vscode.workspace.openTextDocument(vscode.Uri.file(filePath)).then(document => {
+			return vscode.window.showTextDocument(document).then(editor => {
+				return listPackages().then(pkgs => {
+					vendorPkgsRelativePath.forEach(pkg => {
+						assert.equal(pkgs.indexOf(pkg) > -1, true);
+					});
+					vendorPkgsFullPath.forEach(pkg => {
+						assert.equal(pkgs.indexOf(pkg), -1);
+					});
+					return Promise.resolve();
+				});
+			});
+		});
+
+		Promise.all<void>([gopkgsPromise, listPkgPromise]).then(() => done(), done);
 	});
 });

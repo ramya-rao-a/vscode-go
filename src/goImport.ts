@@ -10,18 +10,68 @@ import cp = require('child_process');
 import { getBinPath } from './goPath';
 import { parseFilePrelude } from './util';
 import { promptForMissingTool } from './goInstallTools';
+import path = require('path');
 
 export function listPackages(): Thenable<string[]> {
-	return new Promise<string[]>((resolve, reject) => {
+	let gopkgsPromise = new Promise<string[]>((resolve, reject) => {
 		cp.execFile(getBinPath('gopkgs'), [], (err, stdout, stderr) => {
 			if (err && (<any>err).code === 'ENOENT') {
 				promptForMissingTool('gopkgs');
 				return reject();
 			}
-			let lines = stdout.toString().split('\n');
-			let sortedlines = lines.sort().slice(1); // Drop the empty entry from the final '\n'
-			return resolve(sortedlines);
+			let lines = stdout.split('\n');
+			return resolve(lines);
 		});
+	});
+
+	let govendorPromise = new Promise<string[]>((resolve, reject) => {
+		let fileDir = path.dirname(vscode.window.activeTextEditor.document.fileName);
+		cp.execFile(getBinPath('govendor'), ['list', '-no-status', '+v'], {cwd: fileDir}, (err, stdout, stderr) => {
+			if (err && (<any>err).code === 'ENOENT') {
+				promptForMissingTool('govendor');
+				return reject();
+			}
+			let lines = stdout.split('\n');
+			return resolve(lines);
+		});
+	});
+
+	return Promise.all<string[]>([gopkgsPromise, govendorPromise]).then(([pkgs, vendorPkgs]) => {
+		// No vendor packages found for this workspace, return pkgs
+		if (!vendorPkgs || vendorPkgs.length === 0) {
+			return pkgs.sort();
+		}
+
+		let updatedPkgs: string[] = [];
+
+		pkgs.forEach(pkg => {
+			if (!pkg) {
+				return;
+			}
+
+			let vendorIndex = pkg.indexOf('/vendor/');
+			if (vendorIndex > 0) {
+				let vendorPackageRelativePath = pkg.substr(vendorIndex + 8);
+				if (vendorPackageRelativePath && vendorPkgs.indexOf(vendorPackageRelativePath) > -1) {
+					// When a vendor package for a project/repo already exists outside the current project,
+					// pkgs would already have an entry for it.
+					// In which case, we can skip adding the vendor package to the list
+					// Example: Assume package 'a' is installed from github.com/somerepo/a to $GOPATH
+					//          The current project github.com/someotherrepo/b may have a version of a as a vendor package
+					// 			github.com/someotherrepo/b/vendor/github.com/somerepo/a
+					// 			In this case, github.com/somerepo/a would already be returned by goPkgs
+					if (pkgs.indexOf(vendorPackageRelativePath) === -1) {
+						updatedPkgs.push(vendorPackageRelativePath);
+					}
+					return;
+				}
+			}
+			// pkg is not a vendor project or is a vendor project not belonging to current project
+			updatedPkgs.push(pkg);
+
+		});
+		updatedPkgs = updatedPkgs.sort();
+		return updatedPkgs;
 	});
 }
 
