@@ -13,7 +13,22 @@ import { documentSymbols } from './goOutline';
 import { promptForMissingTool, isVendorSupported } from './goInstallTools';
 import path = require('path');
 
-export function listPackages(excludeImportedPkgs: boolean = false): Thenable<string[]> {
+let pkgsCacheRefreshInterval: number = 1;
+let timeForLastPkgsCacheRefresh: number;
+let pkgsCache: PackageInfo[] = null;
+
+interface PackageInfo {
+	name: string;
+	path: string;
+}
+
+export function listPackages(excludeImportedPkgs: boolean = false): Thenable<PackageInfo[]> {
+	let nowTime = Date.now();
+	if (pkgsCache && nowTime - timeForLastPkgsCacheRefresh < pkgsCacheRefreshInterval) {
+		return Promise.resolve(pkgsCache);
+	}
+	timeForLastPkgsCacheRefresh = nowTime;
+
 	let importsPromise = excludeImportedPkgs && vscode.window.activeTextEditor ? getImports(vscode.window.activeTextEditor.document.fileName) : Promise.resolve([]);
 	let vendorSupportPromise = isVendorSupported();
 	let goPkgsPromise = new Promise<string[]>((resolve, reject) => {
@@ -84,6 +99,7 @@ export function listPackages(excludeImportedPkgs: boolean = false): Thenable<str
 					let relativePathForVendorPkg = pkg.substring(vendorIndex + magicVendorString.length);
 
 					if (relativePathForVendorPkg && currentFileDirPath.startsWith(rootProjectForVendorPkg)) {
+						let index = relativePathForVendorPkg.lastIndexOf('/');
 						pkgSet.add(relativePathForVendorPkg);
 						return;
 					}
@@ -94,6 +110,15 @@ export function listPackages(excludeImportedPkgs: boolean = false): Thenable<str
 			});
 
 			return Array.from(pkgSet).sort();
+		}).then((pkgSet: string[]) => {
+			pkgsCache = pkgSet.map(pkg => {
+					let index = pkg.lastIndexOf('/');
+					return {
+						name: index === -1 ? pkg : pkg.substr(index + 1),
+						path: pkg
+					};
+				});
+			return pkgsCache;
 		});
 	});
 }
@@ -117,7 +142,7 @@ export function getImports(fileName: string): Promise<string[]> {
 
 function askUserForImport(): Thenable<string> {
 	return listPackages(true).then(packages => {
-		return vscode.window.showQuickPick(packages);
+		return vscode.window.showQuickPick(packages.map(x => x.path));
 	});
 }
 

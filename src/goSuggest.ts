@@ -193,14 +193,8 @@ export class GoCompletionItemProvider implements vscode.CompletionItemProvider {
 	}
 	// TODO: Shouldn't lib-path also be set?
 	private ensureGoCodeConfigured(): Thenable<void> {
-		let pkgPromise = listPackages(true).then((pkgs: string[]) => {
-				this.pkgsList = pkgs.map(pkg => {
-					let index = pkg.lastIndexOf('/');
-					return {
-						name: index === -1 ? pkg : pkg.substr(index + 1),
-						path: pkg
-					};
-				});
+		let pkgPromise = listPackages(true).then((pkgs) => {
+				this.pkgsList = pkgs;
 			});
 		let configPromise = new Promise<void>((resolve, reject) => {
 			// TODO: Since the gocode daemon is shared amongst clients, shouldn't settings be

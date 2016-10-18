@@ -18,7 +18,7 @@ export class GoCodeActionProvider implements vscode.CodeActionProvider {
 				let [_, name] = /^undefined: (\S*)/.exec(diag.message);
 				return listPackages().then(packages => {
 					let commands = packages
-						.filter(pkg => pkg === name || pkg.endsWith('/' + name))
+						.filter(pkg => pkg.name === name)
 						.map(pkg => {
 							return {
 								title: 'import "' + pkg + '"',
