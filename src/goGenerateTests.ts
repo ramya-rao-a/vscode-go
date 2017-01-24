@@ -120,7 +120,7 @@ export function generateTestCurrentFunction(): Thenable<boolean> {
 }
 
 /**
- * Input to goTests.
+ * Input to
  */
 interface Config {
 	/**
