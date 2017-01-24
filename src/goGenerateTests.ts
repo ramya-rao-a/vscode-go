@@ -124,7 +124,7 @@ export function generateTestCurrentFunction(): Thenable<boolean> {
  */
 interface Config {
 	/**
-	 * The working directory for `gotests`.
+	 * The workintests`.
 	 */
 	dir: string;
 	/**
