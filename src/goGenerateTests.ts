@@ -51,8 +51,7 @@ export function openTestFile(): void {
 	vscode.commands.executeCommand('vscode.open', vscode.Uri.file(testFilePath));
 }
 
-/**
- * Opens the Go file with implementation for the test file in the current active editor
+/**or the test file in the current active editor
  */
 export function openImplementationForTestFile(): void {
 	let editor = vscode.window.activeTextEditor;
@@ -79,15 +78,20 @@ export function generateTestCurrentPackage(): Thenable<boolean> {
 	return generateTests({ dir: dir });
 }
 
+//asdf      
 export function generateTestCurrentFile(): Thenable<boolean> {
 	let editor = checkActiveEditor();
 	if (!editor) {
 		return;
 	}
 	let file = editor.document.uri.fsPath;
+
+
+
 	return generateTests({ dir: file });
 }
 
+//asdf adsf asdf
 export function generateTestCurrentFunction(): Thenable<boolean> {
 	let editor = checkActiveEditor();
 	if (!editor) {

@@ -30,7 +30,7 @@ export function definitionLocation(document: vscode.TextDocument, position: vsco
 	if (!wordRange || lineText.startsWith('//') || isPositionInString(document, position) || word.match(/^\d+.?\d+$/) || goKeywords.indexOf(word) > 0) {
 		return Promise.resolve(null);
 	}
-
+//asfaf
 	let offset = byteOffsetAt(document, position);
 	return getGoVersion().then((ver: SemVersion) => {
 		// If no Go version can be parsed, it means it's a non-tagged one.
