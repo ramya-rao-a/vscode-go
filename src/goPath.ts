@@ -11,6 +11,7 @@
 import fs = require('fs');
 import path = require('path');
 import os = require('os');
+import { getFromGlobalState, updateGlobalState } from './stateUtils';
 
 let binPathCache: { [bin: string]: string; } = {};
 
@@ -88,10 +89,17 @@ function correctBinname(toolName: string) {
 
 function fileExists(filePath: string): boolean {
 	let flag = true;
+	const installDates = getFromGlobalState('installDates', {});
 	try {
 		fs.accessSync(filePath, fs.constants.F_OK | fs.constants.X_OK);
+		const stats = fs.statSync(filePath);
+		installDates[filePath] = stats.mtime.getTime();
+		updateGlobalState('installDates', installDates);
 	} catch (e) {
 		flag = false;
+		if (installDates[filePath]) {
+			delete installDates[filePath];
+		}
 	}
 	return flag;
 }
@@ -187,4 +195,9 @@ export function getCurrentGoWorkspaceFromGOPATH(gopath: string, currentFileDirPa
 // Workaround for issue in https://github.com/Microsoft/vscode/issues/9448#issuecomment-244804026
 export function fixDriveCasingInWindows(pathToFix: string): string {
 	return (process.platform === 'win32' && pathToFix) ? pathToFix.substr(0, 1).toUpperCase() + pathToFix.substr(1) : pathToFix;
+}
+
+export function getLastModifiedDateForTool(toolPath: string): number {
+	const installDates = getFromGlobalState('installDates', {});
+	return installDates[toolPath];
 }
