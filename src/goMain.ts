@@ -36,7 +36,7 @@ import {
 import {
 	LanguageClient, RevealOutputChannelOn, FormattingOptions, ProvideDocumentFormattingEditsSignature,
 	ProvideCompletionItemsSignature, ProvideRenameEditsSignature, ProvideDefinitionSignature, ProvideHoverSignature,
-	ProvideReferencesSignature, ProvideSignatureHelpSignature, ProvideDocumentSymbolsSignature, ProvideWorkspaceSymbolsSignature
+	ProvideReferencesSignature, ProvideSignatureHelpSignature, ProvideDocumentSymbolsSignature, ProvideWorkspaceSymbolsSignature, HandleDiagnosticsSignature
 } from 'vscode-languageclient';
 import { clearCacheForTools, fixDriveCasingInWindows } from './goPath';
 import { addTags, removeTags } from './goModifytags';
@@ -63,7 +63,6 @@ export let lintDiagnosticCollection: vscode.DiagnosticCollection;
 export let vetDiagnosticCollection: vscode.DiagnosticCollection;
 
 export function activate(ctx: vscode.ExtensionContext): void {
-	let useLangServer = vscode.workspace.getConfiguration('go')['useLanguageServer'];
 	setGlobalState(ctx.globalState);
 
 	updateGoPathGoRootFromConfig().then(() => {
@@ -190,6 +189,9 @@ export function activate(ctx: vscode.ExtensionContext): void {
 							}
 							return null;
 						},
+						handleDiagnostics: (uri: vscode.Uri, diagnostics: vscode.Diagnostic[], next: HandleDiagnosticsSignature) => {
+							return;
+						}
 					}
 				}
 			);
@@ -433,7 +435,6 @@ export function activate(ctx: vscode.ExtensionContext): void {
 				}
 			});
 		}
-		useLangServer = updatedGoConfig['useLanguageServer'];
 
 		// If there was a change in "toolsGopath" setting, then clear cache for go tools
 		if (getToolsGopath() !== getToolsGopath(false)) {
